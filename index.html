@@ -1,127 +1,26 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Freeroll Calc</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0f0f13; --surface: #1a1a24; --surface2: #22222e; --border: #2e2e3e;
-    --accent: #00e5a0; --accent-dim: rgba(0,229,160,0.12);
-    --red: #ff4d6d; --red-dim: rgba(255,77,109,0.12);
-    --yellow: #ffd166; --yellow-dim: rgba(255,209,102,0.10);
-    --text: #e8e8f0; --muted: #6b6b80; --radius: 10px;
-    --font: 'Inter', system-ui, sans-serif;
-  }
-  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; }
-  .container { width: 100%; max-width: 520px; }
-  .header { margin-bottom: 1.5rem; }
-  .header h1 { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
-  .header p { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
-  .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
-  .field { margin-bottom: 0.75rem; }
-  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 500; letter-spacing: 0.04em; }
-  .field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; font-size: 16px; color: var(--text); font-family: var(--font); transition: border-color 0.15s; }
-  .field input:focus { outline: none; border-color: var(--accent); }
-  .field input::placeholder { color: var(--muted); font-size: 14px; }
-  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stake-field { position: relative; }
-  .stake-field input { padding-left: 36px; }
-  .stake-field .prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--muted); pointer-events: none; margin-top: 10px; }
-  .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 6px; margin-top: 0.75rem; }
-  .badge-ok   { background: var(--accent-dim); color: var(--accent); }
-  .badge-warn { background: var(--yellow-dim); color: var(--yellow); }
-  .badge-bad  { background: var(--red-dim); color: var(--red); }
-  .badge-neu  { background: var(--surface2); color: var(--muted); }
-  .results { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
-  .result-label { font-size: 10px; color: var(--muted); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
-  .result-val { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .result-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
-  .val-pos { color: var(--accent); } .val-neg { color: var(--red); } .val-zero { color: var(--yellow); } .val-muted { color: var(--muted); }
-  .result-card.double { border-color: var(--accent); background: var(--accent-dim); }
-  .result-card.double .result-label { color: var(--accent); }
-</style>
-</head>
-<body>
-<div class="container">
-  <div class="header">
-    <h1>Freeroll Calc</h1>
-    <p>Digita o over ou o under — o outro calcula automaticamente</p>
-  </div>
-  <div class="card">
-    <div class="card-title">Dados do mercado</div>
-    <div class="row2">
-      <div class="field"><label>Jogador</label><input id="jogador" type="text" placeholder="ex: Jonathan David"></div>
-      <div class="field"><label>Linha</label><input id="linha" type="number" min="0.5" step="0.5" placeholder="ex: 0.5"></div>
-    </div>
-    <div class="divider"></div>
-    <div class="row2">
-      <div class="field"><label>Odd under — Bet365</label><input id="odd_under" type="number" min="1.01" step="0.01" placeholder="ex: 2.37"></div>
-      <div class="field"><label>Casa over</label><input id="casa" type="text" placeholder="ex: Betano"></div>
-    </div>
-    <div class="field"><label>Odd over</label><input id="odd_over" type="number" min="1.01" step="0.01" placeholder="ex: 1.84"></div>
-    <div class="divider"></div>
-    <div class="row2">
-      <div class="field stake-field"><label>Stake over (R$)</label><span class="prefix">R$</span><input id="inp_over" type="number" min="1" step="1" placeholder="300"></div>
-      <div class="field stake-field"><label>Stake under (R$)</label><span class="prefix">R$</span><input id="inp_under" type="number" min="1" step="1" placeholder="auto"></div>
-    </div>
-    <div id="status_badge"><span class="badge badge-neu">aguardando dados</span></div>
-  </div>
-  <div class="results">
-    <div class="result-card">
-      <div class="result-label">Green</div>
-      <div class="result-val val-muted" id="pl_green">—</div>
-      <div class="result-sub">linha bate, sem sub</div>
-    </div>
-    <div class="result-card">
-      <div class="result-label">Red</div>
-      <div class="result-val val-muted" id="pl_red">—</div>
-      <div class="result-sub">sub, substituto não fecha</div>
-    </div>
-    <div class="result-card double">
-      <div class="result-label">Double Green</div>
-      <div class="result-val val-muted" id="pl_double">—</div>
-      <div class="result-sub">sub + substituto fecha</div>
-    </div>
-  </div>
-</div>
-<script>
-let lastEdited = null, updating = false;
-function fmt(n) { if (isNaN(n)) return '—'; return (n >= 0 ? '+R$ ' : '-R$ ') + Math.abs(n).toFixed(2); }
-function recalc() {
-  if (updating) return; updating = true;
-  const oo = parseFloat(document.getElementById('odd_over').value);
-  const ou = parseFloat(document.getElementById('odd_under').value);
-  const so_raw = parseFloat(document.getElementById('inp_over').value);
-  const su_raw = parseFloat(document.getElementById('inp_under').value);
-  if (oo > 1 && ou > 1) {
-    if (lastEdited === 'over' && so_raw > 0) document.getElementById('inp_under').value = Math.round(so_raw / (ou - 1));
-    else if (lastEdited === 'under' && su_raw > 0) document.getElementById('inp_over').value = Math.round(su_raw * (ou - 1));
-  }
-  updating = false;
-  const so = parseFloat(document.getElementById('inp_over').value);
-  const su = parseFloat(document.getElementById('inp_under').value);
-  const badge = document.getElementById('status_badge');
-  if (!oo || oo <= 1 || !ou || ou <= 1 || !so || !su) {
-    ['pl_green','pl_red','pl_double'].forEach(id => { document.getElementById(id).textContent = '—'; document.getElementById(id).className = 'result-val val-muted'; });
-    badge.innerHTML = '<span class="badge badge-neu">aguardando dados</span>'; return;
-  }
-  const pl_green = so*(oo-1)-su, pl_red = -so+su*(ou-1), pl_double = so*(oo-1)+su*(ou-1);
-  const g = document.getElementById('pl_green'); g.textContent = fmt(pl_green); g.className = 'result-val '+(pl_green>=0?'val-pos':'val-neg');
-  const r = document.getElementById('pl_red'); r.textContent = fmt(pl_red); r.className = 'result-val '+(pl_red>=0?'val-pos':pl_red>-1?'val-zero':'val-neg');
-  const d = document.getElementById('pl_double'); d.textContent = fmt(pl_double); d.className = 'result-val val-pos';
-  if (pl_green >= -0.01) badge.innerHTML = '<span class="badge badge-ok">✅ Freeroll perfeito</span>';
-  else if (pl_green >= -50) badge.innerHTML = `<span class="badge badge-warn">⚠ Perda residual de R$ ${Math.abs(pl_green).toFixed(2)}</span>`;
-  else badge.innerHTML = `<span class="badge badge-bad">❌ Perda alta: R$ ${Math.abs(pl_green).toFixed(2)}</span>`;
-}
-document.getElementById('inp_over').addEventListener('input',  () => { lastEdited = 'over';  recalc(); });
-document.getElementById('inp_under').addEventListener('input', () => { lastEdited = 'under'; recalc(); });
-document.getElementById('odd_over').addEventListener('input',  recalc);
-document.getElementById('odd_under').addEventListener('input', recalc);
-</script>
-</body>
-</html>
+Freeroll Calc
+Detecta automaticamente o melhor cen�rio por aposta
+Dados do mercado
+Jogador
+Linha
+Odd under - Bet365
+Casa over
+Odd over
+Stake over (R$) R$ 
+Stake under (R$) R$ 
+
+-
+-
+-
+? Stake over recomendado - 
+? Stake under recomendado - 
+Threshold (odd_under � (odd_under-1)) - 
+Green
+-
+linha bate, sem sub
+Red
+-
+sub, n�o fecha
+Double Green
+-
+sub + fecha
